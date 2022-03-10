@@ -1,0 +1,22 @@
+{
+  "ConnectionString" : "Server=localhost;Database=InsightMenu;Trusted_Connection=True;Type System Version=SQL Server 2012",
+  "OutputFile" : "g_Enums.dll",
+  "Namespace" : "MyProject.Enums",
+  "Tables" : [
+    {
+      "EnumName" : "AccountStatus", 
+      "TableName": "_IMAccount_Status",
+      "NameField" : "name",
+      "ValueField" : "id",
+      "IsFlags" : false
+    },
+    { 
+      "EnumName" : "CustomerStatus", 
+      "TableName": "_IMCustomer_Status",
+      "NameField" : "name",
+      "ValueField" : "id",
+      "DescriptionField" : "description",
+      "IsFlags" : false
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "ConnectionString" : "Server=localhost;Database=myserver;Trusted_Connection=True;",
+  "OutputFile" : "g_MyNewEnums.cs",
+  "Namespace" : "MyProject.Enums",
+  "Tables" : [
+    {
+      "EnumName" : "AccountStatus",
+      "TableName": "Account_Status",
+      "NameField" : "name",
+      "ValueField" : "id",
+      "IsFlags" : false
+    },
+    {
+      "EnumName" : "CustomerStatus",
+      "TableName": "Customer_Status",
+      "NameField" : "name",
+      "ValueField" : "id",
+      "DescriptionField" : "description",
+      "IsFlags" : false
+    }
+  ]
+}
