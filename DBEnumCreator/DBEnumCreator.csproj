@@ -13,7 +13,7 @@
         <IsTool>true</IsTool>
         <PackAsTool>true</PackAsTool>
         <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
-        <PackageVersion>1.0.1</PackageVersion>
+        <PackageVersion>1.0.0</PackageVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -29,6 +29,10 @@
       <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.1.0" />
       <PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
     </ItemGroup>
+
+    <Target Name="NugetPackAutoVersioning" AfterTargets="Build">
+        <Exec Command="dotnet pack -p:PackageVersion=$([System.DateTime]::Now.ToString(&quot;yyyy.MM.dd.HHmmss&quot;)) --no-build --configuration $(Configuration) --output &quot;$(SolutionDir)nuget&quot;" />
+    </Target>
 
 <!--
     <Target Name="MyAfterBuild" AfterTargets="Build">
