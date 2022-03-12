@@ -14,10 +14,17 @@ const string defaultSettingsFile = "enumsettings.json";
 
 var filename = args.Length == 1 ? args[0] : defaultSettingsFile;
 
+if (filename == "--sample")
+{
+    Console.WriteLine(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "samplesettings.json")));
+    return 99;
+}
+
 if (!File.Exists(filename) || args.Length > 1)
 {
-    Console.Error.WriteLine("Syntax: DBEnumCreator [enumsettings.json]"
-                            + "\nThis will read the settings from the specified json file and generate the associated enum. 'enumsettings.json' will be used if no settings file is specified");
+    Console.Error.WriteLine("Syntax:\nDBEnumCreator [enumsettings.json]"
+                            + "\n This will read the settings from the specified json file and generate the associated enum. 'enumsettings.json' will be used if no settings file is specified\n"
+                            + "\nDBEnumCreator --sample\n Displays a sample configuration file");
 }
 
 if (!File.Exists(filename))
