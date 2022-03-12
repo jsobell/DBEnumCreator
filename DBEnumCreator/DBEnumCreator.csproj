@@ -6,6 +6,13 @@
         <TargetFramework>net6.0</TargetFramework>
         <LangVersion>10</LangVersion>
         <OutputType>Exe</OutputType>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>DBEnumCreator - Database Enum Generator</Title>
+        <Description>DBEnumCreator creates Enum DLLs or source code from database tables via a project configuration file</Description>
+        <Copyright>Copyright ©Jason Sobell 2022</Copyright>
+        <IsTool>true</IsTool>
+        <PackAsTool>true</PackAsTool>
+        <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,5 +25,11 @@
       <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.1.0" />
       <PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
     </ItemGroup>
+
+<!--
+    <Target Name="MyAfterBuild" AfterTargets="Build">
+        <Exec Command="dotnet nuget push $(OutDir)..\DBEnumCreator.1.0.0.nupkg &#45;&#45;api-key $(env.NUGET_API_KEY) &#45;&#45;source https://api.nuget.org/v3/index.json" />
+    </Target>
+-->
 
 </Project>
