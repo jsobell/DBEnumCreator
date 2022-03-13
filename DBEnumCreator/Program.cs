@@ -88,12 +88,12 @@ string RemoveQuotes(string input)
 
 int SaveToFile(string source, string nameSpace, string fileName)
 {
-    if (!settings.OutputFile.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+    if (!fileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
     {
-        File.WriteAllText(settings.OutputFile, sb.ToString());
-        return 0;
+        File.WriteAllText(fileName, sb.ToString());
+        Console.WriteLine($"File exported: {Path.GetFullPath(settings.OutputFile!)}");
     }
-
+    else
     {
         using var peStream = new MemoryStream();
         var result = GenerateCode(source, fileName!, nameSpace!, false).Emit(peStream);
@@ -116,7 +116,7 @@ int SaveToFile(string source, string nameSpace, string fileName)
     }
 
     // Version for designer to use (.NET4.72)
-    if (fileName.EndsWith(".dll", StringComparison.CurrentCultureIgnoreCase) && !string.IsNullOrWhiteSpace(settings.DesignerOutputFile))
+    if (!string.IsNullOrWhiteSpace(settings.DesignerOutputFile))
     {
         var designerFileName = Path.Combine(settings.DesignerOutputFile);
         using var peStream = new MemoryStream();
@@ -158,6 +158,7 @@ static bool GenerateTypeImports(EnumSettings settings)
 
     sb.AppendLine("</typeImports>");
     File.WriteAllText(settings.TypeImportsFile, sb.ToString());
+    Console.WriteLine($"File exported: {Path.GetFullPath(settings.TypeImportsFile!)}");
     return true;
 }
 
