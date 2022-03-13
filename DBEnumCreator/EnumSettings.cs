@@ -3,7 +3,9 @@ using System.Collections.Generic;
 public class EnumSettings
 {
     public string? ConnectionString { get; set; }
-    public string? OutputFile { get; set; }
+    public string OutputFile { get; set; } = "";
+    public string? DesignerOutputFile { get; set; }
+    public string? TypeImportsFile { get; set; }
     public string? Namespace { get; set; }
     public List<TableDetails> Tables { get; set; } = new List<TableDetails>();
 

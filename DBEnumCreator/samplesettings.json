@@ -1,7 +1,9 @@
 {
   "ConnectionString" : "Server=localhost;Database=myserver;Trusted_Connection=True;",
-  "OutputFile" : "g_MyNewEnums.cs",
   "Namespace" : "MyProject.Enums",
+  "OutputFile" : "g_MyNewEnums.cs",
+  "DesignerOutputFile" : "g_Enums.Designer.dll",
+  "TypeImportsFile" : "g_Enums.Designer.typeimports",
   "Tables" : [
     {
       "EnumName" : "AccountStatus",

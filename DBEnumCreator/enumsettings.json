@@ -1,7 +1,9 @@
 {
   "ConnectionString" : "Server=localhost;Database=InsightMenu;Trusted_Connection=True;Type System Version=SQL Server 2012",
-  "OutputFile" : "g_Enums.dll",
   "Namespace" : "MyProject.Enums",
+  "OutputFile" : "g_Enums.dll",
+  "DesignerOutputFile" : "g_Enums.Designer.dll",
+  "TypeImportsFile" : "g_Enums.Designer.typeimports",
   "Tables" : [
     {
       "EnumName" : "AccountStatus", 

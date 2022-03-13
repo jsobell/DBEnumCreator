@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.IO;
-using System.Linq;
+﻿using System.Data.SqlClient;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
@@ -41,7 +38,7 @@ if (settings == null)
 }
 
 var sb = new StringBuilder();
-sb.AppendLine("using System.ComponentModel;");
+sb.AppendLine("using System.ComponentModel;\nusing System;");
 
 if (!string.IsNullOrWhiteSpace(settings.Namespace))
     sb.AppendLine($"namespace {settings.Namespace} " + "{");
@@ -61,7 +58,8 @@ foreach (var table in settings.Tables)
         var description = (!String.IsNullOrWhiteSpace(table.DescriptionField))
             ? $"[Description(\"{RemoveQuotes(reader[table.DescriptionField].ToString()!)}\")]"
             : "";
-        sb.AppendLine($"{description} {reader[table.NameField]} = {reader[table.ValueField]},");
+        sb.AppendLine(
+            $"{description} {Variableify(reader[table.NameField!].ToString()!)} = {reader[table.ValueField!]},");
     }
 
     sb.AppendLine($"}}\n");
@@ -71,11 +69,16 @@ if (!string.IsNullOrWhiteSpace(settings.Namespace))
     sb.AppendLine("}");
 
 if (!String.IsNullOrWhiteSpace(settings.OutputFile))
-    SaveToFile(sb.ToString(), settings);
+    SaveToFile(sb.ToString(), settings.Namespace!, settings.OutputFile);
 else
     Console.WriteLine(sb.ToString());
 return 0;
 
+string Variableify(string fieldName)
+{
+    if (fieldName == null) throw new ArgumentNullException(nameof(fieldName));
+    return Regex.Replace(fieldName, @"^[^A-Za-z_]+|\W+", String.Empty);
+}
 
 string RemoveQuotes(string input)
 {
@@ -83,7 +86,7 @@ string RemoveQuotes(string input)
 }
 
 
-int SaveToFile(string source, EnumSettings enumSettings)
+int SaveToFile(string source, string nameSpace, string fileName)
 {
     if (!settings.OutputFile.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
     {
@@ -91,43 +94,102 @@ int SaveToFile(string source, EnumSettings enumSettings)
         return 0;
     }
 
-    using var peStream = new MemoryStream();
-    var fileName = enumSettings.OutputFile;
-    var result = GenerateCode(source, fileName!, enumSettings.Namespace!).Emit(peStream);
-    if (!result.Success)
     {
-        Console.Error.WriteLine("Compilation errors");
-        var failures = result.Diagnostics.Where(diagnostic =>
-            diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error);
-        foreach (var diagnostic in failures)
+        using var peStream = new MemoryStream();
+        var result = GenerateCode(source, fileName!, nameSpace!, false).Emit(peStream);
+        if (!result.Success)
         {
-            Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
+            Console.Error.WriteLine("Compilation errors");
+            var failures = result.Diagnostics.Where(diagnostic =>
+                diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error);
+            foreach (var diagnostic in failures)
+            {
+                Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
+            }
+
+            return 3;
         }
 
-        return 3;
+        Console.WriteLine($"File exported: {Path.GetFullPath(fileName!)}");
+        peStream.Seek(0, SeekOrigin.Begin);
+        File.WriteAllBytes(fileName!, peStream.ToArray());
     }
 
-    Console.WriteLine($"File exported: {Path.GetFullPath(fileName!)}");
+    // Version for designer to use (.NET4.72)
+    if (fileName.EndsWith(".dll", StringComparison.CurrentCultureIgnoreCase) && !string.IsNullOrWhiteSpace(settings.DesignerOutputFile))
+    {
+        var designerFileName = Path.Combine(settings.DesignerOutputFile);
+        using var peStream = new MemoryStream();
+        var result = GenerateCode(source, designerFileName!, nameSpace!, true).Emit(peStream);
+        if (!result.Success)
+        {
+            Console.Error.WriteLine("Compilation errors");
+            var failures = result.Diagnostics.Where(diagnostic =>
+                diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error);
+            foreach (var diagnostic in failures)
+            {
+                Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
+            }
 
-    peStream.Seek(0, SeekOrigin.Begin);
+            return 3;
+        }
 
-    File.WriteAllBytes(fileName!, peStream.ToArray());
+        Console.WriteLine($"File exported: {Path.GetFullPath(designerFileName!)}");
+        peStream.Seek(0, SeekOrigin.Begin);
+        File.WriteAllBytes(designerFileName!, peStream.ToArray());
+    }
+
+    GenerateTypeImports(settings);
+
     return 0;
 }
 
-static CSharpCompilation GenerateCode(string sourceCode, string filename, string assName)
+static bool GenerateTypeImports(EnumSettings settings)
+{
+    if (string.IsNullOrWhiteSpace(settings.TypeImportsFile))
+        return false;
+    StringBuilder sb = new StringBuilder();
+    sb.AppendLine("<typeImports>");
+    foreach (var table in settings.Tables)
+    {
+        sb.AppendLine(
+            $"<typeImport typeName=\"{settings.Namespace}.{table.EnumName}\" assemblyFile=\"{settings.DesignerOutputFile}\"/>");
+    }
+
+    sb.AppendLine("</typeImports>");
+    File.WriteAllText(settings.TypeImportsFile, sb.ToString());
+    return true;
+}
+
+static CSharpCompilation GenerateCode(string sourceCode, string filename, string assName, bool forLLBLGen)
 {
     var codeString = SourceText.From(sourceCode);
     var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp6);
     var parsedSyntaxTree = SyntaxFactory.ParseSyntaxTree(codeString, options);
-    var references = new List<MetadataReference>
+    List<MetadataReference>? references;
+    if (forLLBLGen)
     {
-        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-        MetadataReference.CreateFromFile(typeof(System.ComponentModel.DescriptionAttribute).Assembly.Location)
-    };
-    Assembly.GetEntryAssembly()
-        ?.GetReferencedAssemblies().ToList()
-        .ForEach(r => references.Add(MetadataReference.CreateFromFile(Assembly.Load(r).Location)));
+        references = new List<MetadataReference>
+        {
+            MetadataReference.CreateFromFile(
+                @"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\mscorlib.dll"),
+            MetadataReference.CreateFromFile(
+                @"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.dll"),
+            MetadataReference.CreateFromFile(
+                @"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.ComponentModel.Composition.dll")
+        };
+    }
+    else
+    {
+        references = new List<MetadataReference>
+        {
+            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(System.ComponentModel.DescriptionAttribute).Assembly.Location)
+        };
+        Assembly.GetEntryAssembly()
+            ?.GetReferencedAssemblies().ToList()
+            .ForEach(r => references.Add(MetadataReference.CreateFromFile(Assembly.Load(r).Location)));
+    }
 
     return CSharpCompilation.Create(assName,
         new[] {parsedSyntaxTree},
