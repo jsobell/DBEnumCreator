@@ -72,6 +72,36 @@ if (!String.IsNullOrWhiteSpace(settings.OutputFile))
     SaveToFile(sb.ToString(), settings.Namespace!, settings.OutputFile);
 else
     Console.WriteLine(sb.ToString());
+
+if (!String.IsNullOrWhiteSpace(settings.JavascriptOutputFile))
+{
+    var jsb = new StringBuilder();
+    jsb.AppendLine($"var {Variableify(settings.Namespace)} = {{");
+    foreach (var table in settings.Tables)
+    {
+        var selectString = $"SELECT * FROM {table.TableName} order by {table.ValueField}";
+        using SqlConnection connection = new SqlConnection(settings.ConnectionString);
+        var command = new SqlCommand(selectString, connection);
+        connection.Open();
+        using SqlDataReader reader = command.ExecuteReader();
+        if (table.IsFlags)
+            jsb.AppendLine("// Binary Flag based values:");
+        jsb.AppendLine($"{table.EnumName}: {{");
+        while (reader.Read())
+        {
+            var description = (!String.IsNullOrWhiteSpace(table.DescriptionField))
+                ? $"  // {reader[table.DescriptionField].ToString()!}"
+                : "";
+            jsb.AppendLine(
+                $"{Variableify(reader[table.NameField!].ToString()!)} : {reader[table.ValueField!]}, {description}");
+        }
+        jsb.AppendLine($"}},\n");
+    }
+    jsb.AppendLine($"}}\n");
+    File.WriteAllText(settings.JavascriptOutputFile, jsb.ToString());
+    Console.WriteLine($"File exported: {Path.GetFullPath(settings.JavascriptOutputFile!)}");
+}
+
 return 0;
 
 string Variableify(string fieldName)

@@ -3,6 +3,7 @@
   "Namespace" : "MyProject.Enums",
   "OutputFile" : "g_MyNewEnums.cs",
   "DesignerOutputFile" : "g_Enums.Designer.dll",
+  "JavascriptOutputFile" : "g_Enums.generated.js",
   "TypeImportsFile" : "g_Enums.Designer.typeimports",
   "Tables" : [
     {
