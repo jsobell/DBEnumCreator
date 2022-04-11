@@ -1,5 +1,5 @@
 {
-  "ConnectionString" : "Server=localhost;Database=myserver;Trusted_Connection=True;",
+  "ODBCConnectionString" : "Driver={PostgreSQL ANSI};Server=remoteserveraddress.com;Port=5432;Database=postgres;Uid=username;Pwd=password;",
   "Namespace" : "MyProject.Enums",
   "OutputFile" : "g_MyNewEnums.cs",
   "DesignerOutputFile" : "g_Enums.Designer.dll",

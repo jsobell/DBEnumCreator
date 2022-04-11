@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 public class EnumSettings
 {
-    public string? ConnectionString { get; set; }
+    public string? ODBCConnectionString { get; set; }
     public string OutputFile { get; set; } = "";
     public string? DesignerOutputFile { get; set; }
     public string? JavascriptOutputFile { get; set; }

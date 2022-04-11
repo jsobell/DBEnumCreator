@@ -1,21 +1,21 @@
 {
-  "ConnectionString" : "Server=localhost;Database=InsightMenu;Trusted_Connection=True;Type System Version=SQL Server 2012",
+  "ODBCConnectionString" : "Driver={PostgreSQL ANSI};Server=remoteserveraddress.com;Port=5432;Database=postgres;Uid=username;Pwd=password;",
   "Namespace" : "MyProject.Enums",
-  "OutputFile" : "g_Enums.cs",
+  "OutputFile" : "g_MyNewEnums.cs",
   "DesignerOutputFile" : "g_Enums.Designer.dll",
   "JavascriptOutputFile" : "g_Enums.generated.js",
   "TypeImportsFile" : "g_Enums.Designer.typeimports",
   "Tables" : [
     {
-      "EnumName" : "AccountStatus", 
-      "TableName": "_IMAccount_Status",
+      "EnumName" : "AccountStatus",
+      "TableName": "Account_Status",
       "NameField" : "name",
       "ValueField" : "id",
       "IsFlags" : false
     },
-    { 
-      "EnumName" : "CustomerStatus", 
-      "TableName": "_IMCustomer_Status",
+    {
+      "EnumName" : "CustomerStatus",
+      "TableName": "Customer_Status",
       "NameField" : "name",
       "ValueField" : "id",
       "DescriptionField" : "description",

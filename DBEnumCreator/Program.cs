@@ -1,4 +1,5 @@
-﻿using System.Data.SqlClient;
+﻿using System.Data.Odbc;
+using System.Data.SqlClient;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -36,6 +37,11 @@ if (settings == null)
     Console.Error.WriteLine($"Unable to deserialise settings file {Path.GetFullPath(filename)}");
     return 2;
 }
+if (string.IsNullOrWhiteSpace(settings.ODBCConnectionString))
+{
+    Console.Error.WriteLine($"No ODBC connectionstring provided in settings file {Path.GetFullPath(filename)}");
+    return 3;
+}
 
 var sb = new StringBuilder();
 sb.AppendLine("using System.ComponentModel;\nusing System;");
@@ -45,11 +51,14 @@ if (!string.IsNullOrWhiteSpace(settings.Namespace))
 
 foreach (var table in settings.Tables)
 {
+    using OdbcConnection connection = new OdbcConnection(settings.ODBCConnectionString);
     var selectString = $"SELECT * FROM {table.TableName} order by {table.ValueField}";
-    using SqlConnection connection = new SqlConnection(settings.ConnectionString);
-    var command = new SqlCommand(selectString, connection);
-    connection.Open();
-    using SqlDataReader reader = command.ExecuteReader();
+    var reader = ExecuteSQL(connection, selectString);
+
+    //using SqlConnection connection = new SqlConnection(settings.ConnectionString);
+    //var command = new SqlCommand(selectString, connection);
+    //connection.Open();
+    //using SqlDataReader reader = command.ExecuteReader();
     if (table.IsFlags)
         sb.AppendLine("[Flags]");
     sb.AppendLine($"public enum {table.EnumName} {{");
@@ -63,6 +72,7 @@ foreach (var table in settings.Tables)
     }
 
     sb.AppendLine($"}}\n");
+    connection.Close();
 }
 
 if (!string.IsNullOrWhiteSpace(settings.Namespace))
@@ -76,14 +86,16 @@ else
 if (!String.IsNullOrWhiteSpace(settings.JavascriptOutputFile))
 {
     var jsb = new StringBuilder();
-    jsb.AppendLine($"var {Variableify(settings.Namespace)} = {{");
+    jsb.AppendLine($"var {Variableify(settings.Namespace ?? "DB")} = {{");
     foreach (var table in settings.Tables)
     {
+        using OdbcConnection connection = new OdbcConnection(settings.ODBCConnectionString);
         var selectString = $"SELECT * FROM {table.TableName} order by {table.ValueField}";
-        using SqlConnection connection = new SqlConnection(settings.ConnectionString);
-        var command = new SqlCommand(selectString, connection);
-        connection.Open();
-        using SqlDataReader reader = command.ExecuteReader();
+        var reader = ExecuteSQL(connection, selectString);
+        // using SqlConnection connection = new SqlConnection(settings.ConnectionString);
+        // var command = new SqlCommand(selectString, connection);
+        // connection.Open();
+        // using SqlDataReader reader = command.ExecuteReader();
         if (table.IsFlags)
             jsb.AppendLine("// Binary Flag based values:");
         jsb.AppendLine($"{table.EnumName}: {{");
@@ -96,13 +108,23 @@ if (!String.IsNullOrWhiteSpace(settings.JavascriptOutputFile))
                 $"{Variableify(reader[table.NameField!].ToString()!)} : {reader[table.ValueField!]}, {description}");
         }
         jsb.AppendLine($"}},\n");
+        connection.Close();
     }
     jsb.AppendLine($"}}\n");
     File.WriteAllText(settings.JavascriptOutputFile, jsb.ToString());
     Console.WriteLine($"File exported: {Path.GetFullPath(settings.JavascriptOutputFile!)}");
 }
-
+Console.WriteLine($"Done");
 return 0;
+
+
+OdbcDataReader ExecuteSQL(OdbcConnection connection, string sql)
+{
+    OdbcCommand command = new OdbcCommand(sql, connection);
+    connection.Open();
+    return command.ExecuteReader();
+}
+
 
 string Variableify(string fieldName)
 {
